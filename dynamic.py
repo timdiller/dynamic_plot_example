@@ -1,13 +1,18 @@
 import numpy as np
 
-from chaco.api import ArrayPlotData, Plot
+from chaco.api import ArrayPlotData, HPlotContainer, Plot
 from enable.api import ComponentEditor
 from pyface.api import CANCEL, FileDialog, OK
-from traits.api import Array, DelegatesTo, Event, HasStrictTraits, Instance, List, Property, Str
+from traits.api import (
+    Array, DelegatesTo, Event, HasTraits, HasStrictTraits, Instance, List, Property, Str,
+    cached_property,
+)
 from traitsui.api import (
     ButtonEditor, CheckListEditor, Group, HGroup, HSplit, ListEditor, InstanceEditor, Item, 
     Spring, VGroup, View,
 )
+
+DEPTH = "DEPTH"
 
 
 class DrillData(HasStrictTraits):
@@ -17,16 +22,34 @@ class DrillData(HasStrictTraits):
     def _get_channels(self):
         return self.data.dtype.names if self.data is not None else []
 
-class ChannelView(HasStrictTraits):
+class ChannelsView(HasTraits):
     data = Instance(DrillData)
-    name = Str()
-    plot = Instance(Plot)
-    traits_view = View(
-        VGroup(
-            Item('plot', editor=ComponentEditor(),),
-            Item('name'),
-        ),
-    ),
+    channels = List()
+    plots = Instance(HPlotContainer)
+
+    def _plots_default(self):
+        plots = []
+        # import ipdb;  ipdb.set_trace()
+        if self.data is not None:
+            data_dict = {chan: self.data.data[chan] for chan in self.channels}
+            data_dict[DEPTH] = self.data.data[DEPTH]
+            apd = ArrayPlotData(**data_dict)
+            
+            for channel in self.channels:
+                plot = Plot(apd)
+                plot.plot((channel, DEPTH), origin='top left')
+                plot.title = channel
+                if len(plots) >= 1:
+                    plot.value_axis.visible = False
+                    plot.padding_left = 1
+                plots.append(plot)
+        hpc = HPlotContainer(*plots)
+        return hpc
+
+channel_plots_editor = InstanceEditor(
+    view=View(Item('plots', editor=ComponentEditor(), show_label=False))
+)
+
 
 class DataView(HasStrictTraits):
     drill_data = Instance(DrillData)
@@ -34,18 +57,21 @@ class DataView(HasStrictTraits):
     open_file = Event()
     channels = Property(depends_on="drill_data")
     selected_channels = List()
-    channel_views = Property(List(Instance(ChannelView)), depends_on='selected_channels')
+    channels_view = Property(Instance(ChannelsView), depends_on="selected_channels")
 
     def _get_channels(self):
         if self.drill_data is not None:
             channels = list(self.drill_data.channels)
-            channels.remove("DEPTH")
+            channels.remove(DEPTH)
             return channels
         else:
             return []
-    
-    def _get_channel_views(self):
-        return [ChannelView(name=channel) for channel in self.selected_channels]
+        
+    @cached_property
+    def _get_channels_view(self):
+        return ChannelsView(data=self.drill_data, 
+                            channels=self.selected_channels)
+
 
     def _open_file_fired(self):
         fd = FileDialog()
@@ -54,7 +80,8 @@ class DataView(HasStrictTraits):
             self.filename = fd.filename
             data = np.genfromtxt(fd.path, names=True)
             self.drill_data = DrillData(data=data)
-    
+
+
 data_view = View(
     HSplit(
         Group(
@@ -74,12 +101,9 @@ data_view = View(
         ),
         Group(
             Item(
-                'channel_views', 
-                editor=ListEditor(
-                    editor=InstanceEditor(),
-                    style='custom',
-                ),
-                style='readonly',
+                'channels_view', 
+                editor=channel_plots_editor,
+                style='custom',
                 show_label=False,
             ),
             springy=True,
@@ -87,7 +111,7 @@ data_view = View(
     ),
     resizable=True,
     height=500,
-    width=500,
+    width=1000,
 )
 
 
