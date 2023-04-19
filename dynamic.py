@@ -13,7 +13,7 @@ from traitsui.api import (
 )
 
 DEPTH = "DEPTH"
-MISSING_VALUE = -999.25
+MISSING_VALUE = b'-999.2500'
 
 
 class DrillData(HasStrictTraits):
@@ -79,9 +79,16 @@ class DataView(HasStrictTraits):
         status = fd.open()
         if status == OK:
             self.filename = fd.filename
-            data = np.genfromtxt(fd.path, names=True)
-            for name in data.dtype.names:
-                data[name][data[name] == MISSING_VALUE] = np.nan
+            with open(fd.path) as f:
+                column_num = len(f.readline().split())
+            data = np.genfromtxt(
+                fd.path,
+                names=True,
+                converters={
+                    i: lambda x: float(x.strip(b'%')) if x != MISSING_VALUE else np.nan
+                    for i in range(column_num)
+                },
+            )
             self.drill_data = DrillData(data=data)
 
 
