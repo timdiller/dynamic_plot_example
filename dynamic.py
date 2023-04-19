@@ -41,7 +41,6 @@ class ChannelsView(HasTraits):
                 plot.title = channel
                 if len(plots) >= 1:
                     plot.value_axis.visible = False
-                    plot.padding_left = 1
                 plots.append(plot)
         hpc = HPlotContainer(*plots)
         return hpc
