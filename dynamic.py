@@ -13,6 +13,7 @@ from traitsui.api import (
 )
 
 DEPTH = "DEPTH"
+MISSING_VALUE = -999.25
 
 
 class DrillData(HasStrictTraits):
@@ -42,7 +43,7 @@ class ChannelsView(HasTraits):
                 if len(plots) >= 1:
                     plot.value_axis.visible = False
                 plots.append(plot)
-        hpc = HPlotContainer(*plots)
+        hpc = HPlotContainer(*plots, spacing=1)
         return hpc
 
 channel_plots_editor = InstanceEditor(
@@ -78,6 +79,8 @@ class DataView(HasStrictTraits):
         if status == OK:
             self.filename = fd.filename
             data = np.genfromtxt(fd.path, names=True)
+            for name in data.dtype.names:
+                data[name][data[name] == MISSING_VALUE] = np.nan
             self.drill_data = DrillData(data=data)
 
 
