@@ -85,7 +85,7 @@ class DataView(HasStrictTraits):
                 fd.path,
                 names=True,
                 converters={
-                    i: lambda x: float(x) if x != MISSING_VALUE else np.nan
+                    i: lambda x: float(x.strip(b'%')) if x != MISSING_VALUE else np.nan
                     for i in range(column_num)
                 },
             )
