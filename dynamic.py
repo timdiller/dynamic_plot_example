@@ -38,8 +38,8 @@ class ChannelsView(HasTraits):
             apd = ArrayPlotData(**data_dict)
             
             for channel in self.channels:
-                plot = Plot(apd)
-                plot.plot((channel, DEPTH), origin='top left')
+                plot = Plot(apd, origin='top left')
+                plot.plot((channel, DEPTH))
                 plot.title = channel
                 plot.padding_left = 0
                 plot.padding_right = 0
