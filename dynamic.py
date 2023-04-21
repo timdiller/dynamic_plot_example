@@ -41,6 +41,8 @@ class ChannelsView(HasTraits):
                 plot = Plot(apd)
                 plot.plot((channel, DEPTH), origin='top left')
                 plot.title = channel
+                plot.padding_left = 0
+                plot.padding_right = 0
                 if len(plots) >= 1:
                     plot.value_axis.visible = False
                     plot.value_range = plots[0].value_range
@@ -48,7 +50,12 @@ class ChannelsView(HasTraits):
                     plot.tools.append(PanTool(plot, constrain=True, constrain_direction='y'))
                     plot.overlays.append(BetterSelectingZoom(plot, axis='value', zoom_factor=1.05))
                 plots.append(plot)
-        hpc = HPlotContainer(*plots, spacing=1)
+        hpc = HPlotContainer(
+            *plots,
+            padding_left=50,
+            padding_right=50,
+            spacing=1
+        )
         return hpc
 
 channel_plots_editor = InstanceEditor(
