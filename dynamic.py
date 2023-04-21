@@ -1,6 +1,7 @@
 import numpy as np
 
 from chaco.api import ArrayPlotData, HPlotContainer, Plot
+from chaco.tools.api import PanTool, BetterSelectingZoom
 from enable.api import ComponentEditor
 from pyface.api import CANCEL, FileDialog, OK
 from traits.api import (
@@ -37,13 +38,17 @@ class ChannelsView(HasTraits):
             apd = ArrayPlotData(**data_dict)
             
             for channel in self.channels:
-                plot = Plot(apd)
-                plot.plot((channel, DEPTH), origin='top left')
+                plot = Plot(apd, origin='top left')
+                plot.plot((channel, DEPTH))
                 plot.title = channel
                 plot.padding_left = 0
                 plot.padding_right = 0
                 if len(plots) >= 1:
                     plot.value_axis.visible = False
+                    plot.value_range = plots[0].value_range
+                else:
+                    plot.tools.append(PanTool(plot, constrain=True, constrain_direction='y'))
+                    plot.overlays.append(BetterSelectingZoom(plot, axis='value', zoom_factor=1.05))
                 plots.append(plot)
         hpc = HPlotContainer(
             *plots,
